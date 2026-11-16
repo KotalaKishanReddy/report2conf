@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversion result</title>
+<style>
+body { font-family: Georgia, 'Times New Roman', serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+td, th { border: 1px solid #999; padding: 0.4rem; text-align: left; font-size: 0.95rem; }
+.hint { font-size: 0.9rem; color: #333; }
+.ok { color: #0f5132; font-weight: bold; }
+.over { color: #842029; font-weight: bold; }
+a.btn { display: inline-block; margin-top: 1rem; padding: 0.7rem 1.4rem; background: #0f5132; color: #fff; text-decoration: none; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>Conversion result</h1>
+<p class="hint">Paper title: <strong>{{ title }}</strong></p>
+{% if autofilled %}
+<p class="hint">Note: {{ autofilled|join(" and ") }} {{ "were" if autofilled|length > 1 else "was" }} filled in automatically. Re-run with your own values if they look wrong.</p>
+{% endif %}
+{% if coverage.within_budget %}
+<p class="ok">Done: {{ coverage.pages }} pages, within your {{ coverage.max_pages }}-page limit.</p>
+{% else %}
+<p class="over">Done with a warning: {{ coverage.pages or 'unknown' }} pages vs {{ coverage.max_pages }}-page limit. Tighten content or raise the limit.</p>
+{% endif %}
+<a class="btn" href="/download/{{ out_file }}">Download paper (.docx)</a>
+<h2>Coverage</h2>
+<table>
+<tr><th>Item</th><th>Count</th></tr>
+<tr><td>Report words in</td><td>{{ coverage.report_words }}</td></tr>
+<tr><td>Sections kept</td><td>{{ coverage.sections_kept }}</td></tr>
+<tr><td>Tables included / total</td><td>{{ coverage.tables_included }} / {{ coverage.tables_total }}</td></tr>
+<tr><td>Tables deferred (see note)</td><td>{{ coverage.tables_deferred }}</td></tr>
+<tr><td>Images included / total</td><td>{{ coverage.images_total }} / {{ coverage.images_total }}</td></tr>
+<tr><td>References kept</td><td>{{ coverage.references_kept }}</td></tr>
+<tr><td>AI-rewritten sections</td><td>{{ coverage.llm_used }}</td></tr>
+<tr><td>Extractive fallback sections</td><td>{{ coverage.fallback_used }}</td></tr>
+</table>
+{% if coverage.tables_deferred %}
+<p>Note: {{ coverage.tables_deferred }} tables did not fit the page budget and are listed here instead of dropped silently. Re-run with a higher page limit to include them.</p>
+{% endif %}
+{% if coverage.pdf_error %}
+<p>Page measurement warning: {{ coverage.pdf_error }}</p>
+{% endif %}
+<h2>Sections</h2>
+<ul>
+{% for s in sections %}
+<li>{{ s.heading }} — {{ s.orig_words }} words to {{ s.new_words }}</li>
+{% endfor %}
+</ul>
+<p><a href="/">Convert another</a></p>
+</body>
+</html>

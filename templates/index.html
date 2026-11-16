@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report to Conference Paper</title>
+<style>
+body { font-family: Georgia, 'Times New Roman', serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+h1 { font-size: 1.5rem; }
+label { display: block; margin: 0.9rem 0 0.3rem; font-weight: bold; }
+input[type=text], input[type=number], textarea { width: 100%; padding: 0.5rem; border: 1px solid #999; border-radius: 4px; font-size: 1rem; }
+button { margin-top: 1.2rem; padding: 0.7rem 1.4rem; font-size: 1rem; background: #0f5132; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+button:hover { background: #0b3d26; }
+.hint { font-size: 0.9rem; color: #333; }
+</style>
+</head>
+<body>
+<h1>Report to Conference Paper</h1>
+<p class="hint">Upload the long report and the IEEE conference template. The tool fills the template, keeps every fact and figure it can, and stays under your page limit.</p>
+<form action="/convert" method="post" enctype="multipart/form-data">
+<label>Report (.docx)</label>
+<input type="file" name="report" accept=".docx" required>
+<label>Conference template (.docx)</label>
+<input type="file" name="template" accept=".docx" required>
+<label>Paper title (blank = auto-detect)</label>
+<input type="text" name="title" id="f_title" placeholder="Paper title">
+<label>Authors, one per line (blank = auto-detect)</label>
+<textarea name="authors" id="f_authors" rows="3" placeholder="First Author&#10;Second Author"></textarea>
+<label>Keywords</label>
+<input type="text" name="keywords" id="f_keywords" value="conference paper, formatting, results">
+<label>Maximum pages</label>
+<input type="number" name="max_pages" id="f_pages" value="4" min="1" max="20">
+<label><input type="checkbox" name="use_llm" checked> Use AI rewrite when an API key is configured</label>
+<button type="submit">Convert</button>
+</form>
+<script>
+try {
+  var saved = JSON.parse(localStorage.getItem("r2c") || "{}");
+  if (saved.title) document.getElementById("f_title").value = saved.title;
+  if (saved.authors) document.getElementById("f_authors").value = saved.authors;
+  if (saved.keywords) document.getElementById("f_keywords").value = saved.keywords;
+  if (saved.pages) document.getElementById("f_pages").value = saved.pages;
+  document.querySelector("form").addEventListener("submit", function () {
+    localStorage.setItem("r2c", JSON.stringify({
+      title: document.getElementById("f_title").value,
+      authors: document.getElementById("f_authors").value,
+      keywords: document.getElementById("f_keywords").value,
+      pages: document.getElementById("f_pages").value
+    }));
+  });
+} catch (e) { /* private mode: form still works, values just are not remembered */ }
+</script>
+</body>
+</html>

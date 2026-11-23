@@ -11,6 +11,8 @@ label { display: block; margin: 0.9rem 0 0.3rem; font-weight: bold; }
 input[type=text], input[type=number], textarea { width: 100%; padding: 0.5rem; border: 1px solid #999; border-radius: 4px; font-size: 1rem; }
 button { margin-top: 1.2rem; padding: 0.7rem 1.4rem; font-size: 1rem; background: #0f5132; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
 button:hover { background: #0b3d26; }
+a { color: #0f5132; }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #0f5132; outline-offset: 2px; }
 .hint { font-size: 0.9rem; color: #333; }
 </style>
 </head>
@@ -18,8 +20,9 @@ button:hover { background: #0b3d26; }
 <h1>Report to Conference Paper</h1>
 <p class="hint">Upload the long report and the IEEE conference template. The tool fills the template, keeps every fact and figure it can, and stays under your page limit.</p>
 <form action="/convert" method="post" enctype="multipart/form-data">
-<label>Report (.docx)</label>
-<input type="file" name="report" accept=".docx" required>
+<label>Report (.docx, .pdf, or image)</label>
+<input type="file" name="report" accept=".docx,.pdf,.png,.jpg,.jpeg,.tiff,.bmp,.webp" required>
+<p class="hint">Scanned PDFs/images are OCR'd locally (Tesseract, offline). Set <code>REPORT2CONF_OCR=unlimited</code> with the baidu/Unlimited-OCR-2 weights installed to use one-shot long-horizon parsing instead.</p>
 <label>Conference template (.docx)</label>
 <input type="file" name="template" accept=".docx" required>
 <label>Paper title (blank = auto-detect)</label>
@@ -30,7 +33,7 @@ button:hover { background: #0b3d26; }
 <input type="text" name="keywords" id="f_keywords" value="conference paper, formatting, results">
 <label>Maximum pages</label>
 <input type="number" name="max_pages" id="f_pages" value="4" min="1" max="20">
-<label><input type="checkbox" name="use_llm" checked> Use AI rewrite when an API key is configured</label>
+<label><input type="checkbox" name="use_llm"> Use cloud AI rewrite when an API key is configured (off = free + safe extractive fallback)</label>
 <button type="submit">Convert</button>
 </form>
 <script>

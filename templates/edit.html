@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit paper {{ job }}</title>
+<style>
+body { font-family: Georgia, 'Times New Roman', serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+label { display: block; margin: 0.9rem 0 0.3rem; font-weight: bold; }
+input[type=text], textarea { width: 100%; padding: 0.5rem; border: 1px solid #999; border-radius: 4px; font-size: 1rem; }
+textarea.body { min-height: 140px; font-family: inherit; }
+button { margin-top: 1.2rem; padding: 0.7rem 1.4rem; font-size: 1rem; background: #0f5132; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+button:hover { background: #0b3d26; }
+a { color: #0f5132; }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #0f5132; outline-offset: 2px; }
+.hint { font-size: 0.9rem; color: #333; }
+section.block { border: 1px solid #ccc; border-radius: 6px; padding: 0.8rem; margin: 0.8rem 0; }
+</style>
+</head>
+<body>
+<h1>Online editor</h1>
+<p class="hint">Edit the paper text here, then save to rebuild both downloads (editable + strict). Files never leave this server.</p>
+<form action="/save/{{ job }}" method="post">
+<label>Paper title</label>
+<input type="text" name="title" value="{{ state.title }}">
+<label>Authors, one per line</label>
+<textarea name="authors" rows="3">{{ state.authors|join("\n") }}</textarea>
+<label>Keywords</label>
+<input type="text" name="keywords" value="{{ state.keywords }}">
+<label>Abstract</label>
+<textarea name="abstract" rows="4">{{ state.abstract }}</textarea>
+{% for s in state.sections %}
+<section class="block">
+<label>Heading {{ loop.index }}</label>
+<input type="text" name="heading" value="{{ s.heading }}">
+<label>Body {{ loop.index }}</label>
+<textarea class="body" name="text">{{ s.text }}</textarea>
+</section>
+{% endfor %}
+<button type="submit">Save and rebuild paper</button>
+</form>
+<p><a href="/">Convert another</a></p>
+</body>
+</html>

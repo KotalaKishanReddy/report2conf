@@ -4,3 +4,8 @@ lxml
 pypdf
 openai
 pytest
+Pillow
+PyMuPDF
+# Optional: baidu/Unlimited-OCR-2 backend needs torch + transformers +
+# model weights (A800-class GPU). Not installed by default; set
+# REPORT2CONF_OCR=unlimited + UNLIMITED_OCR_MODEL to enable.

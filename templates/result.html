@@ -11,7 +11,9 @@ td, th { border: 1px solid #999; padding: 0.4rem; text-align: left; font-size: 0
 .hint { font-size: 0.9rem; color: #333; }
 .ok { color: #0f5132; font-weight: bold; }
 .over { color: #842029; font-weight: bold; }
-a.btn { display: inline-block; margin-top: 1rem; padding: 0.7rem 1.4rem; background: #0f5132; color: #fff; text-decoration: none; border-radius: 4px; }
+a.btn { display: inline-block; margin: 1rem 0.5rem 0 0; padding: 0.7rem 1.4rem; background: #0f5132; color: #fff; text-decoration: none; border-radius: 4px; }
+a.btn:hover { background: #0b3d26; }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #0f5132; outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -26,6 +28,10 @@ a.btn { display: inline-block; margin-top: 1rem; padding: 0.7rem 1.4rem; backgro
 <p class="over">Done with a warning: {{ coverage.pages or 'unknown' }} pages vs {{ coverage.max_pages }}-page limit. Tighten content or raise the limit.</p>
 {% endif %}
 <a class="btn" href="/download/{{ out_file }}">Download paper (.docx)</a>
+<a class="btn" href="/download/{{ strict_file }}">Download strict (.docx)</a>
+<a class="btn" href="/edit/{{ job }}">Edit online</a>
+{% if coverage.ocr_used %}<p class="hint">OCR was used for this report (local Tesseract unless Unlimited-OCR was enabled).</p>{% endif %}
+{% if coverage.edited %}<p class="hint">Saved from the online editor.</p>{% endif %}
 <h2>Coverage</h2>
 <table>
 <tr><th>Item</th><th>Count</th></tr>
@@ -33,8 +39,8 @@ a.btn { display: inline-block; margin-top: 1rem; padding: 0.7rem 1.4rem; backgro
 <tr><td>Sections kept</td><td>{{ coverage.sections_kept }}</td></tr>
 <tr><td>Tables included / total</td><td>{{ coverage.tables_included }} / {{ coverage.tables_total }}</td></tr>
 <tr><td>Tables deferred (see note)</td><td>{{ coverage.tables_deferred }}</td></tr>
-<tr><td>Images included / total</td><td>{{ coverage.images_total }} / {{ coverage.images_total }}</td></tr>
-<tr><td>References kept</td><td>{{ coverage.references_kept }}</td></tr>
+<tr><td>Images included / total</td><td>{{ coverage.images_included }} / {{ coverage.images_total }}</td></tr>
+<tr><td>References kept / total</td><td>{{ coverage.references_kept }} / {{ coverage.references_total }}</td></tr>
 <tr><td>AI-rewritten sections</td><td>{{ coverage.llm_used }}</td></tr>
 <tr><td>Extractive fallback sections</td><td>{{ coverage.fallback_used }}</td></tr>
 </table>

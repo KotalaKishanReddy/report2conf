@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, send_file, abort
 from core.normalize import normalize_template, rebuild_strict
 from core.extract import prettify_filename
 from core.ocr import extract_any_report
+from core.typography import paper_css
 from core.rewrite import rewrite_sections, target_words
 from core.build import build_paper
 from core.paginate import pdf_page_count
@@ -183,10 +184,13 @@ def edit(job):
     if ".." in job or "/" in job:
         abort(404)
     try:
-        state, _images = _load_job_state(job)
+        state, images = _load_job_state(job)
     except FileNotFoundError:
         abort(404)
-    return render_template("edit.html", job=job, state=state)
+    norm_path = os.path.join(OUTDIR, f"{job}_normalized.docx")
+    css = paper_css(norm_path) if os.path.isfile(norm_path) else ""
+    return render_template("edit.html", job=job, state=state,
+                           doc_css=css, n_images=len(images))
 
 
 @app.post("/save/<job>")
@@ -197,38 +201,60 @@ def save(job):
         state, images = _load_job_state(job)
     except FileNotFoundError:
         abort(404)
-    title = request.form.get("title", state["title"]).strip() or state["title"]
-    authors = [a.strip() for a in request.form.get("authors", "\n".join(state["authors"])).splitlines() if a.strip()] or state["authors"]
-    abstract = request.form.get("abstract", state["abstract"])
-    keywords = request.form.get("keywords", state["keywords"])
-    headings = request.form.getlist("heading")
-    texts = request.form.getlist("text")
-    sections = state["sections"]
-    if headings and texts and len(headings) == len(texts):
-        sections = [{"heading": h.strip() or f"Section {i + 1}", "level": 1, "text": t,
-                     "orig_words": len(t.split()), "new_words": len(t.split())}
-                    for i, (h, t) in enumerate(zip(headings, texts))]
+    raw = request.form.get("doc_json", "")
+    if not raw:
+        abort(400, "Empty document.")
+    try:
+        d = json.loads(raw)
+    except ValueError:
+        abort(400, "Could not read edited document.")
+    title = str(d.get("title", "")).strip() or state["title"]
+    authors = [a for a in (str(x).strip() for x in d.get("authors", [])) if a] or state["authors"]
+    abstract = str(d.get("abstract", ""))
+    keywords = str(d.get("keywords", ""))
+    sections = []
+    for i, s in enumerate(d.get("sections", [])):
+        paras = [p for p in (str(x).strip() for x in s.get("paras", [])) if p]
+        heading = str(s.get("heading", "")).strip() or f"Section {i + 1}"
+        if not paras:
+            continue
+        text = "\n".join(paras)
+        try:
+            level = int(s.get("level", 1))
+        except (TypeError, ValueError):
+            level = 1
+        sections.append({"heading": heading, "level": 1 if level != 2 else 2,
+                         "text": text, "orig_words": len(text.split()),
+                         "new_words": len(text.split())})
+    if not sections:
+        abort(400, "The document has no sections.")
+    tables = []
+    for t in d.get("tables", [])[:10]:
+        rows = [[str(c)[:300] for c in row] for row in t if any(str(c).strip() for c in row)]
+        if rows:
+            tables.append(rows)
+    references = [str(r).strip() for r in d.get("references", []) if str(r).strip()][:40]
     norm_path = os.path.join(OUTDIR, f"{job}_normalized.docx")
     out_path = os.path.join(OUTDIR, f"{job}_paper.docx")
     out_path, strict_path = _build_dual(
         norm_path, title, authors, abstract, keywords, sections,
-        state["tables"], images, state["references"], out_path)
+        tables, images, references, out_path)
     pages, pdf_path = pdf_page_count(out_path)
     _save_job_state(job, title, authors, abstract, keywords,
-                    sections, state["tables"], state["image_metas"],
-                    state["references"], state["max_pages"],
+                    sections, tables, state["image_metas"],
+                    references, state["max_pages"],
                     ocr_used=state.get("ocr_used", False))
     coverage_report = {
-        "report_words": state.get("sections") and sum(s.get("new_words", 0) for s in sections) or 0,
+        "report_words": sum(s.get("new_words", 0) for s in sections),
         "sections_kept": len(sections),
-        "tables_total": len(state["tables"]),
-        "tables_included": min(len(state["tables"]), 10),
-        "tables_deferred": max(0, len(state["tables"]) - 10),
+        "tables_total": len(tables),
+        "tables_included": min(len(tables), 10),
+        "tables_deferred": max(0, len(tables) - 10),
         "images_total": len(images),
         "images_included": len(images),
-        "references_kept": min(len(state["references"]), 40),
-        "references_total": len(state["references"]),
-        "references_deferred": max(0, len(state["references"]) - 40),
+        "references_kept": min(len(references), 40),
+        "references_total": len(references),
+        "references_deferred": max(0, len(references) - 40),
         "pages": pages,
         "max_pages": state["max_pages"],
         "within_budget": bool(pages and pages <= state["max_pages"]),
@@ -247,6 +273,21 @@ def save(job):
                            coverage=coverage_report,
                            sections=coverage_sections,
                            title=title, autofilled=[])
+
+
+@app.get("/img/<job>/<int:n>")
+def img(job, n):
+    if ".." in job or "/" in job:
+        abort(404)
+    try:
+        state, _images = _load_job_state(job)
+    except FileNotFoundError:
+        abort(404)
+    metas = state.get("image_metas", [])
+    if n < 0 or n >= len(metas):
+        abort(404)
+    return send_file(os.path.join(OUTDIR, metas[n]["file"]),
+                     mimetype=metas[n].get("ctype", "image/png"))
 
 
 @app.get("/download/<name>")

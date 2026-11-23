@@ -54,6 +54,67 @@ def test_unlimited_ocr_off_by_default():
     assert unlimited_ocr_available() is False
 
 
+def test_paper_css_uses_template_type(tmp_path):
+    from docx import Document
+
+    from core.typography import paper_css
+
+    p = tmp_path / "t.docx"
+    doc = Document()
+    doc.add_paragraph("x", style="Title")
+    doc.save(p)
+    css = paper_css(str(p))
+    assert ".doc-title" in css and ".doc-body" in css
+    assert "Times New Roman" in css
+
+
+def test_paper_css_unknown_alignment_falls_back(tmp_path):
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    from core.typography import paper_css
+
+    p = tmp_path / "s.docx"
+    doc = Document()
+    doc.add_paragraph("x", style="Title")
+    pPr = doc.styles["Title"]._element.get_or_add_pPr()
+    jc = OxmlElement("w:jc")
+    jc.set(qn("w:val"), "start")  # emitted by some generators; unmappable
+    pPr.append(jc)
+    doc.save(p)
+    css = paper_css(str(p))
+    assert ".doc-title" in css
+
+
+def test_save_doc_json_flow():
+    import json as _json
+
+    import app as appmod
+    from core.normalize import normalize_template
+
+    job = "testdoc1"
+    tpl = "/home/kotalakishanreddy/Downloads/conference-template-a4.docx"
+    normalize_template(tpl, os.path.join(appmod.OUTDIR, f"{job}_normalized.docx"))
+    appmod._save_job_state(
+        job, "Old", ["A"], "Abs", "k",
+        [{"heading": "H", "level": 1, "text": "old body",
+          "orig_words": 2, "new_words": 2}],
+        [], [], ["ref one"], 4)
+    c = appmod.app.test_client()
+    payload = {
+        "title": "New", "authors": ["A", "B"], "abstract": "Abs2",
+        "keywords": "k",
+        "sections": [{"heading": "Intro", "level": 1, "paras": ["Hello 42."]}],
+        "tables": [[["a", "b"], ["1", "2"]]],
+        "references": ["ref two"],
+    }
+    r = c.post(f"/save/{job}", data={"doc_json": _json.dumps(payload)})
+    assert r.status_code == 200
+    html = r.data.decode()
+    assert "Images included / total" in html
+
+
 def test_build_then_strict_keeps_text(tmp_path):
     from core.normalize import normalize_template
 
